@@ -1,4 +1,4 @@
--- CombatTextLite v0.1
+-- CombatTextLite v0.2
 -- Simple toggle for enabling or disabling floating combat text through an easy in-game command and options interface.
 
 local addonName = "CombatTextLite"
@@ -32,13 +32,27 @@ IS WHERE WE BUILD OUT THE SETTINGS PANEL AND SLASH COMMANDS
 
 -- Settings Panel
 local settingsCategory
+local settingsFrame
 local suppressCallbacks = false
 
 local function CreateSettingsPanel()
-    local category, layout = Settings.RegisterVerticalLayoutCategory("CombatTextLite")
-    settingsCategory = category.ID
-
-    -- Master toggle
+    -- Create custom frame with manual UI elements instead of using Blizzard's managed layout system.
+    -- Using RegisterCanvasLayoutCategory (custom frame) instead of RegisterVerticalLayoutCategory
+    -- (Blizzard-managed widgets) prevents taint issues when interacting with protected frames
+    -- like Edit Mode and ExtraActionButton.
+    settingsFrame = CreateFrame("Frame", "CombatTextLiteSettingsFrame")
+    settingsFrame:Hide()
+    
+    -- Title
+    local title = settingsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("CombatTextLite")
+    
+    -- Master toggle checkbox
+    local masterCheckbox = CreateFrame("CheckButton", nil, settingsFrame, "InterfaceOptionsCheckButtonTemplate")
+    masterCheckbox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -16)
+    masterCheckbox.Text:SetText("Toggle All Combat Text")
+    
     local function GetMasterValue()
         return GetCVar("floatingCombatTextCombatDamage_v2") == "1"
     end
@@ -52,18 +66,30 @@ local function CreateSettingsPanel()
         SetCVar("floatingCombatTextPetSpellDamage_v2", newValue)
         SetCVar("floatingCombatTextCombatLogPeriodicSpells_v2", newValue)
         suppressCallbacks = false
+        
+        -- Update individual checkboxes to reflect new state
+        for _, cb in ipairs(settingsFrame.individualCheckboxes or {}) do
+            cb:SetChecked(value)
+        end
+        
         info(L.SETTINGS_CHANGED)
     end
     
-    local masterSetting = Settings.RegisterProxySetting(category, "PROXY_MASTER_TOGGLE", 
-        Settings.VarType.Boolean, "Toggle All Combat Text", 
-        Settings.Default.True, GetMasterValue, SetMasterValue)
+    masterCheckbox:SetScript("OnClick", function(self)
+        local checked = self:GetChecked()
+        SetMasterValue(checked)
+    end)
     
-    Settings.CreateCheckbox(category, masterSetting, "Enable or disable all combat text at once")
-
-    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Individual Settings"))
-
-    -- Short labels, full CVar names in tooltips
+    masterCheckbox:SetScript("OnShow", function(self)
+        self:SetChecked(GetMasterValue())
+    end)
+    
+    -- Individual settings header
+    local individualHeader = settingsFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    individualHeader:SetPoint("TOPLEFT", masterCheckbox, "BOTTOMLEFT", 0, -16)
+    individualHeader:SetText("Individual Settings")
+    
+    -- Individual CVar checkboxes
     local cvars = {
         {cvar = "floatingCombatTextCombatDamage_v2", label = "Combat Damage", tooltip = "floatingCombatTextCombatDamage_v2\n\nShow damage you deal"},
         {cvar = "floatingCombatTextCombatHealing_v2", label = "Combat Healing", tooltip = "floatingCombatTextCombatHealing_v2\n\nShow healing you receive"},
@@ -71,35 +97,59 @@ local function CreateSettingsPanel()
         {cvar = "floatingCombatTextPetSpellDamage_v2", label = "Pet Spell Damage", tooltip = "floatingCombatTextPetSpellDamage_v2\n\nShow pet spell damage"},
         {cvar = "floatingCombatTextCombatLogPeriodicSpells_v2", label = "Periodic Spells", tooltip = "floatingCombatTextCombatLogPeriodicSpells_v2\n\nShow DoT/HoT ticks"}
     }
-
+    
+    settingsFrame.individualCheckboxes = {}
+    local lastCheckbox = individualHeader
+    
     for _, data in ipairs(cvars) do
-        local setting = Settings.RegisterCVarSetting(category, data.cvar, Settings.VarType.Boolean, data.label)
-        Settings.CreateCheckbox(category, setting, data.tooltip)
-        Settings.SetOnValueChangedCallback(data.cvar, function()
+        local checkbox = CreateFrame("CheckButton", nil, settingsFrame, "InterfaceOptionsCheckButtonTemplate")
+        checkbox:SetPoint("TOPLEFT", lastCheckbox, "BOTTOMLEFT", 0, -8)
+        checkbox.Text:SetText(data.label)
+        
+        checkbox:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(data.tooltip)
+            GameTooltip:Show()
+        end)
+        
+        checkbox:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+        
+        checkbox:SetScript("OnClick", function(self)
             if not suppressCallbacks then
+                local value = self:GetChecked() and "1" or "0"
+                SetCVar(data.cvar, value)
                 info(L.SETTINGS_CHANGED)
             end
         end)
-    end
-
-    -- Add reload UI button using Canvas API
-    do
-        local initializer = CreateFromMixins(SettingsListElementInitializer)
-        initializer:Init()
         
-        local function OnButtonClick()
-            ReloadUI()
-        end
+        checkbox:SetScript("OnShow", function(self)
+            self:SetChecked(GetCVar(data.cvar) == "1")
+        end)
         
-        layout:AddInitializer(CreateSettingsButtonInitializer(
-            "Click to reload the UI",
-            "Reload UI",
-            OnButtonClick,
-            nil,
-            true
-        ))
+        table.insert(settingsFrame.individualCheckboxes, checkbox)
+        lastCheckbox = checkbox
     end
-
+    
+    -- Reload UI button
+    local reloadButton = CreateFrame("Button", nil, settingsFrame, "UIPanelButtonTemplate")
+    reloadButton:SetPoint("TOPLEFT", lastCheckbox, "BOTTOMLEFT", 0, -24)
+    reloadButton:SetSize(150, 25)
+    reloadButton:SetText("Reload UI")
+    reloadButton:SetScript("OnClick", function()
+        ReloadUI()
+    end)
+    
+    local reloadText = settingsFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    reloadText:SetPoint("LEFT", reloadButton, "RIGHT", 8, 0)
+    reloadText:SetText("Click to reload the UI")
+    
+    -- Register with Settings API using Canvas layout.
+    -- Canvas layout displays our custom frame directly, avoiding taint from Blizzard's
+    -- internal Settings widgets that interact with protected frames.
+    local category = Settings.RegisterCanvasLayoutCategory(settingsFrame, "CombatTextLite")
+    settingsCategory = category.ID
     Settings.RegisterAddOnCategory(category)
 end
 

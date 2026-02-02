@@ -69,6 +69,7 @@ CombatTextLite/
 ├── CombatTextLite.lua    # Main addon code
 ├── CombatTextLite.toc    # Addon metadata
 ├── README.md             # This file
+├── CHANGELOG.md          # Version history and technical changes
 ├── LICENSE               # MIT License
 └── deploy.bat            # Development deployment script
 ```
@@ -81,15 +82,9 @@ For development, use the included `deploy.bat` script to copy files to your WoW 
 - Settings changes require a UI reload (`/reload`) to take effect - this is a Blizzard CVar limitation, not an addon limitation
 - The master toggle uses the first CVar (Combat Damage) to determine the current state of all options
 
-## Version History
+## Changelog
 
-### v0.1 (Current)
-- Initial release
-- Master toggle functionality
-- Individual combat text controls
-- Integrated settings panel
-- Slash command support
-- UI reload notifications
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and technical changes.
 
 ## License
 
