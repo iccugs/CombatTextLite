@@ -2,7 +2,7 @@
 ## Title: CombatTextLite
 ## Notes: Simple toggle for enabling or disabling floating combat text through an easy in-game command and options interface.
 ## Author: Paradox.Actual
-## Version: 0.2
+## Version: 0.3
 ## IconTexture: Interface\Icons\Ability_Warrior_BattleShout
 ## X-Category: Combat
 ## X-Website: https://github.com/iccugs/CombatTextLite

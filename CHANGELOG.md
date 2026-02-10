@@ -5,6 +5,13 @@ All notable changes to CombatTextLite will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3] - 2026-02-10
+
+### Note
+- **Changes**: No changes to the structure of the code.
+  - Version bump: Version was bumped from 0.2 to 0.3.
+  - TOC update: Updated `Interface` line in `.toc` file to reflect the current version of WoW Retail.
+
 ## [0.2] - 2026-02-02
 
 ### Fixed
