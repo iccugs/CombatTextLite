@@ -1,4 +1,4 @@
-## Interface: 120000
+## Interface: 120001
 ## Title: CombatTextLite
 ## Notes: Simple toggle for enabling or disabling floating combat text through an easy in-game command and options interface.
 ## Author: Paradox.Actual
