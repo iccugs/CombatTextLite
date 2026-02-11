@@ -1,4 +1,4 @@
--- CombatTextLite v0.2
+-- CombatTextLite v0.3
 -- Simple toggle for enabling or disabling floating combat text through an easy in-game command and options interface.
 
 local addonName = "CombatTextLite"
